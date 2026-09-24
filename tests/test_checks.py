@@ -296,3 +296,26 @@ def test_json_schema_array_end_to_end_via_run_check() -> None:
         Ctx(),
     )
     assert good.passed is True
+
+
+# --------------------------------------------------------------------------- #
+# P3 评测发现：模型常给 JSON 加围栏 / 前后缀解释，解析器应宽容提取（对所有被测公平）
+def test_parse_json_text_tolerates_fences_and_affixes() -> None:
+    from kaoyanbench.core.checks import _parse_json_text, answer_payload
+
+    assert _parse_json_text('{"count": 10}') == {"count": 10}
+    assert _parse_json_text('```json\n{"count": 10}\n```') == {"count": 10}
+    assert _parse_json_text('```\n{"count": 10}\n```') == {"count": 10}
+    assert _parse_json_text('结果如下：{"count": 10}，请查收') == {"count": 10}
+    assert _parse_json_text('纯文本答案') is None
+    out = make_output(final_answer='```json\n{"count": 10}\n```')
+    assert answer_payload(out)["count"] == 10
+
+
+def test_numeric_passes_on_fenced_json() -> None:
+    check = Check(
+        id="c1", type="numeric", dimension="factuality",
+        params={"path": "$.count", "value": 10, "op": "eq", "tol": 0.0},
+    )
+    out = make_output(final_answer='```json\n{"count": 10, "subject": "x"}\n```')
+    assert run_check(check, make_task(), out, Ctx()).passed is True

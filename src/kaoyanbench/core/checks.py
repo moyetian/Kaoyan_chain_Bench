@@ -96,12 +96,31 @@ def answer_payload(output: AgentOutput, check: Check | None = None) -> Any:
 
 def _parse_json_text(text: str) -> Any:
     stripped = (text or "").strip()
-    if not stripped or stripped[0] not in "[{":
+    if not stripped:
         return None
-    try:
-        return json.loads(stripped)
-    except json.JSONDecodeError:
-        return None
+    # 1) 裸 JSON（最严格，优先）
+    if stripped[0] in "[{":
+        try:
+            return json.loads(stripped)
+        except json.JSONDecodeError:
+            pass
+    # 2) 代码围栏 ```json … ```（模型常见习惯；P3 评测发现 kaoyan_chain 必加围栏）
+    fenced = re.sub(r"^```(?:json|JSON)?\s*", "", stripped)
+    fenced = re.sub(r"\s*```$", "", fenced).strip()
+    if fenced is not stripped and fenced[:1] in "[{":
+        try:
+            return json.loads(fenced)
+        except json.JSONDecodeError:
+            pass
+    # 3) 内嵌 JSON（前后有解释文字）：从第一个 { / [ 起 raw_decode，尾部忽略
+    for index, char in enumerate(fenced):
+        if char in "[{":
+            try:
+                obj, _ = json.JSONDecoder().raw_decode(fenced[index:])
+                return obj
+            except json.JSONDecodeError:
+                continue
+    return None
 
 
 def _load_json_rel(output: AgentOutput, rel_path: str) -> Any:

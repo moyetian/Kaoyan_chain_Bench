@@ -1,0 +1,60 @@
+# kaoyan_chain_shim：考研学习链（ky）评测适配卡（本地评测用）
+#
+# 背景：kaoyan_chain 是交互式备考系统，没有 `kaoyan run --prompt-file … --json`
+# 单发契约（二进制名实际为 `ky`）。本卡通过 bench 自带 shim
+#（tools/shims/kaoyan_chain_bench.py） headless 驱动其内部 AgentRunner。
+# 本卡是**机器本地评测配置**：shim 路径为绝对路径；被测仓库位置与配置
+# 通过环境变量传入（密钥只存在于被测仓库的 ky_config.json，绝不入库）：
+#   set KAOYAN_CHAIN_HOME=D:\测试\考研学习chain\kaoyan_chain_public
+#   set KAOYAN_CHAIN_CONFIG=D:\测试\考研学习chain\kaoyan_chain_public\ky_config.json
+# 用法：
+#   kaoyanbench run --suite smoke --agent kaoyan_chain_shim --tag chain-v2.8.0
+name: kaoyan_chain_shim
+type: command
+version: "2.8.0"
+model: mimo-v2.5
+provider: openai_compatible
+
+command:
+  - "py"
+  - "D:\\KaoYanBench\\tools\\shims\\kaoyan_chain_bench.py"
+  - "--prompt-file"
+  - "{prompt_file}"
+  - "--workspace"
+  - "{workspace}"
+  - "--answer-file"
+  - "{answer_file}"
+  - "--usage-file"
+  - "{usage_file}"
+  - "--task-id"
+  - "{task_id}"
+  - "--max-steps"
+  - "8"
+
+stdin: none
+
+env_passthrough:
+  - KAOYAN_CHAIN_HOME
+  - KAOYAN_CHAIN_CONFIG
+  - OPENAI_BASE_URL
+  - OPENAI_API_KEY
+
+parse:
+  format: json
+  answer_field: final_answer
+  toolcalls_field: tool_calls
+  sources_field: sources
+  citations_field: citations
+  usage_field: usage
+  fallbacks:
+    - text
+
+tool_call_mapping:
+  name: name
+  args: args
+  result: result
+  status: status
+  duration_ms: duration_ms
+
+params:
+  usage_file: true
