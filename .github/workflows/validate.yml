@@ -40,7 +40,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install (editable, zero runtime deps)
-        # 核心路径零第三方依赖；dev extra 只装 pyyaml（用于完整 YAML 校验，可选）。
+        # 核心路径零第三方依赖；dev extra 含 pytest（测试运行器）+ pyyaml/fpdf2/openpyxl。
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"

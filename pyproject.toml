@@ -28,7 +28,9 @@ dependencies = []
 [project.optional-dependencies]
 fixtures = ["fpdf2>=2.7", "openpyxl>=3.1"]
 yaml = ["pyyaml>=6.0"]
-dev = ["pyyaml>=6.0", "fpdf2>=2.7", "openpyxl>=3.1"]
+# dev 必须包含 pytest：CI validate 门禁跑 `pytest tests/`，干净 runner 无预装
+#（此前缺失导致 CI 首跑即 No module named pytest）。运行时依赖仍为零。
+dev = ["pyyaml>=6.0", "fpdf2>=2.7", "openpyxl>=3.1", "pytest>=8.0"]
 
 [project.scripts]
 kaoyanbench = "kaoyanbench.cli:main"
