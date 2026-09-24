@@ -1,0 +1,4 @@
+# 占位文件：保证全新 clone 时 results/ 目录存在。
+# pytest 的 --basetemp=results/.pytest_tmp 需要该父目录，否则全部 tmp_path 用例
+# 在收集后 setup 阶段报 FileNotFoundError（见 CI validate 失败史）。
+# 运行产物（runs/、suites/、workspaces/、*.db 等）仍被 .gitignore 忽略，不入库。
