@@ -92,10 +92,11 @@ def test_mock_runner_missing_preset_unknown_error(tmp_path: Path) -> None:
 
 
 def test_command_runner_timeout_kills_process(tmp_path: Path) -> None:
+    # 用解释器 sleep 代替系统 sleep 命令（Windows 无 sleep 可执行文件，保证跨平台）
     spec = AgentSpec(
         name="cmd",
         type="command",
-        command=["sleep", "999"],
+        command=[sys.executable, "-c", "import time; time.sleep(999)"],
         stdin="none",
         parse=ParseSpec(format="text"),
     )

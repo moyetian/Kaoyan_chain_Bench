@@ -23,12 +23,14 @@ from conftest import make_task, write_task
 # 基本信息与帮助
 # --------------------------------------------------------------------------- #
 def test_version_flag(capsys) -> None:
-    # argparse 的 --version 走 SystemExit(0)
+    # argparse 的 --version 走 SystemExit(0)；版本号与包版本单源一致（勿硬编码）
+    import kaoyanbench
+
     with pytest.raises(SystemExit) as exc:
         cli.main(["--version"])
     assert exc.value.code == 0
     out = capsys.readouterr().out
-    assert out.strip() == "1.0.0"
+    assert out.strip() == kaoyanbench.__version__
 
 
 def test_no_command_prints_help(capsys) -> None:
