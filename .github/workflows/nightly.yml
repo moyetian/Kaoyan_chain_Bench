@@ -1,0 +1,108 @@
+# nightly.yml —— 定时完整回归（任务 C-04）
+# 内容：完整 core50（可用 --concurrency 控制并发）+ 报告产物 artifact 上传。
+#
+# ★ R5：完整 core50 不进入 PR 门禁，只作为 nightly / 发版门禁。
+#   单题 research 上限 900s，串行 50 题理论上限 12.5h；nightly 用 --concurrency 缩短墙钟时间
+#   （默认 4，方案 1.4 上限亦为 4）。
+#
+# ★ 联网题：v1.0 的 23 道 online 题依赖真实网页，19 题快照尚未建立（T-07 遗留）。
+#   nightly 默认**不联网**：不传 GRADER_BASE_URL / GRADER_API_KEY 时语义评测自动降级，
+#   且联网题会因无快照标记 needs_snapshot（不阻塞离线子集）。若仓库 secrets 配了模型
+#   key，语义评测会真实调用；否则优雅降级为 degraded（不使 job 失败）。
+#
+# ★ secrets 为可选：未配置时不报错（见 job 级 env 的默认值处理）。
+name: nightly
+
+on:
+  schedule:
+    # 每日 03:17 UTC（避开整点高峰）。GitHub 定时可能有数分钟延迟。
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      concurrency:
+        description: "并发达数（1~4）"
+        required: false
+        default: "4"
+
+permissions:
+  contents: read
+
+jobs:
+  core50:
+    name: core50 full run (nightly)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    env:
+      # 可选 secrets：未配置时为空字符串，语义评测自动进入 degraded（不失败）。
+      GRADER_BASE_URL: ${{ secrets.GRADER_BASE_URL }}
+      GRADER_API_KEY: ${{ secrets.GRADER_API_KEY }}
+      OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install (editable)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Ensure fixtures exist
+        run: kaoyanbench fixtures build
+
+      - name: Validate core50
+        # P2 起快照已补齐：缺快照即 error，保证离线可复现性不退化。
+        run: kaoyanbench validate --suite core50 --require-snapshots
+
+      - name: Run core50 (mock by default, --concurrency controlled)
+        # mock Runner 零网络，用于验证「完整 50 题 pipeline + 报告 + gate 逻辑」。
+        # 真实 Agent 评测由维护者用 workflow_dispatch + 自定义 agent 触发（见 docs/06）。
+        run: |
+          CONC="${{ github.event.inputs.concurrency || '4' }}"
+          echo "concurrency=$CONC"
+          kaoyanbench run --suite core50 --agent mock \
+            --tag "nightly-${{ github.run_id }}" \
+            --concurrency "$CONC"
+
+      - name: Generate reports
+        run: |
+          kaoyanbench report --suite core50 --agent mock \
+            --tag "nightly-${{ github.run_id }}" \
+            -f json,markdown,html,csv
+
+      - name: Report grader_mode summary
+        env:
+          SUITE_JSON: results/suites/core50__mock__nightly-${{ github.run_id }}.suite.json
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          p = pathlib.Path(os.environ["SUITE_JSON"])
+          if not p.is_file():
+              print("suite 结果缺失：", p)
+              raise SystemExit(0)
+          agg = (json.loads(p.read_text(encoding="utf-8")).get("aggregates") or {})
+          print("grader_mode      =", agg.get("grader_mode"))
+          print("task_success_rate=", agg.get("task_success_rate"))
+          print("score_mean       =", agg.get("score_mean"))
+          if agg.get("grader_mode") != "full":
+              print("::warning:: grader_mode 非 full（语义评测降级/未配置 secrets）。"
+                    "按 R9 不写入 baseline；报告含 degraded 标记，结果仅作参考。")
+          PY
+
+      - name: Upload core50 reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core50-nightly-${{ github.run_id }}
+          path: |
+            reports/
+            results/suites/
+          if-no-files-found: warn
+          retention-days: 30

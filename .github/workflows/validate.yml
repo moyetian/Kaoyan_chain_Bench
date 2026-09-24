@@ -1,0 +1,57 @@
+# validate.yml —— PR / push 门禁（任务 C-04，DoD ★12）
+# 内容：安装（editable）+ pytest + kaoyanbench validate --suite core50
+# 特性：
+#   * 完全离线：不访问网络（除 actions 自身下载），无 secrets。
+#   * matrix：Python 3.10 / 3.11 / 3.12。
+#   * core50 的 validate 只做 schema + fixture hash 校验，不跑 Agent，秒级完成。
+# 设计依据：方案第 7.1 节 C-04、第 5.10 节 CLI 契约、R5（core50 不进 PR 门禁的「运行」层）。
+name: validate
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# 同一分支的重复触发互相取消，节省 CI 资源。
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install (editable, zero runtime deps)
+        # 核心路径零第三方依赖；dev extra 只装 pyyaml（用于完整 YAML 校验，可选）。
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Show version
+        run: kaoyanbench --version
+
+      - name: Pytest
+        # 310+ 用例，零网络依赖。
+        run: python -m pytest tests/ -q
+
+      - name: Validate core50 (schema + fixture hash + snapshot gate, offline)
+        # P2：快照已补齐，缺快照即 error（--require-snapshots）。
+        run: kaoyanbench validate --suite core50 --require-snapshots

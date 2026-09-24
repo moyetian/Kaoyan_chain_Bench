@@ -1,0 +1,32 @@
+# codex：OpenAI Codex CLI 适配卡片（CommandRunner 模板）
+# 说明：命令为模板占位，实际请按本机 codex CLI 的参数调整。
+name: codex
+type: command
+version: "1.0.0"
+model: codex
+provider: openai_compatible
+
+command:
+  - "codex"
+  - "exec"
+  - "--json"
+  - "{instruction}"
+
+stdin: none
+cwd: "{workspace}"
+
+env_passthrough:
+  - OPENAI_API_KEY
+  - OPENAI_BASE_URL
+
+parse:
+  format: jsonl
+  answer_field: final_answer
+  toolcalls_field: tool_calls
+  usage_field: usage
+  fallbacks:
+    - json
+    - text
+
+params:
+  usage_file: false

@@ -1,0 +1,12 @@
+# echo：回显 Runner（B-06）
+# 用途：最小化验证 Runner 协议与 JSONL 落盘链路；**不伪造任何字段**——
+# 只能原样回显指令与 workspace 内容，usage 恒为 none。
+# 接入新 Agent 时，可先用 echo 验证「配置卡片被正确加载 + 日志落盘正常」。
+name: echo
+type: echo
+version: "1.0.0"
+model: echo-model
+provider: echo
+
+parse:
+  format: text

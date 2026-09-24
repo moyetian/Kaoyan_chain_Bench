@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kaoyanbench"
+version = "1.1.0"
+description = "KaoyanBench: an open benchmark for evaluating AI agents on graduate-entrance-examination (考研) research, retrieval, document analysis, evidence verification, planning and long-horizon workflows."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "moyetian" }]
+keywords = ["benchmark", "agent", "kaoyan", "llm", "evaluation", "regression"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+]
+
+# 核心路径零第三方依赖。以下均为可选项，仅用于 fixtures 生成 / 完整 YAML 语法。
+dependencies = []
+
+[project.optional-dependencies]
+fixtures = ["fpdf2>=2.7", "openpyxl>=3.1"]
+yaml = ["pyyaml>=6.0"]
+dev = ["pyyaml>=6.0", "fpdf2>=2.7", "openpyxl>=3.1"]
+
+[project.scripts]
+kaoyanbench = "kaoyanbench.cli:main"
+kyb = "kaoyanbench.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/moyetian/Kaoyan_chain_Bench"
+Repository = "https://github.com/moyetian/Kaoyan_chain_Bench"
+"Related Project" = "https://github.com/moyetian/kaoyan_chain"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+kaoyanbench = ["reporters/assets/*"]
+
+[tool.unittest]
+# 标准库 unittest，零依赖
+start = "tests"
+
+[tool.pytest.ini_options]
+# 默认 basetemp 落在系统临时目录；受限环境（如部分 Windows 上 %TEMP% 被策略拒绝访问）
+# 会在收集阶段直接 PermissionError。固定到仓库内（已被 .gitignore 忽略）以规避。
+# 需要时可用显式 `--basetemp=...` 覆盖（命令行参数在 addopts 之后解析，优先生效）。
+addopts = "--basetemp=results/.pytest_tmp"

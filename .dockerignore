@@ -1,0 +1,37 @@
+# .dockerignore —— 保持构建上下文精简，避免把产物/密钥/缓存打进镜像
+.git/
+.github/
+
+# 运行产物（派生物，不入镜像）
+results/
+reports/
+
+# 缓存与构建产物
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# 环境与密钥（绝不入镜像）
+.env
+*.env
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 文档与测试（运行镜像不需要；如需可注释掉）
+docs/
+tests/
+
+# 版本控制与 CI 元数据
+.gitignore
+CHANGELOG.md

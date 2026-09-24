@@ -1,0 +1,51 @@
+# 运行产物（派生数据，可重建）
+results/
+reports/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# 日志
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+ENV/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.tox/
+.nox/
+
+# 环境
+.env
+*.env
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 覆盖率
+.coverage
+htmlcov/
+
+# 注意：以下目录必须入库
+# benchmark/            （任务定义、fixtures、snapshots 索引）
+# config/               （配置）
+# docs/                 （文档）
+
+# Private 隐藏集题目（本地用 tools/build_private_tasks.py 生成，绝不入库；
+# 生成器与加载机制公开，题目与答案只存于受控环境。README.md 照常入库。）
+benchmark/tasks/private/*/
+!benchmark/tasks/private/README.md

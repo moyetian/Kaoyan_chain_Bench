@@ -1,0 +1,8 @@
+# .gitattributes —— 跨平台逐字节稳定性（KaoyanBench 生命线）
+#
+# 本仓库大量文件被 sha256 锁定（references/manifest.json、snapshots
+# index.json、生成器 --check 比对）。若 Git 在检出时做 LF↔CRLF 换行符转换，
+# Windows 检出后 `validate` / `snapshot verify` 会因 hash 不匹配而失败。
+# 因此：全部文件不做任何换行符转换，原样检出（入库即 LF，检出亦 LF）。
+# 新增文本文件请用 LF 换行；生成器一律按字节写入（见 tools/* 注释）。
+* -text

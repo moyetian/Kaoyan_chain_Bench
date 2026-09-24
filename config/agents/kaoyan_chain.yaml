@@ -1,0 +1,57 @@
+# kaoyan_chain：主被测 Agent（CommandRunner，调用外部 CLI）
+# 实际的命令行、参数与解析规则由 kaoyan_chain 项目提供；本卡片是「接入契约」。
+# 占位符（{prompt_file} 等）由 CommandRunner 渲染，见方案 5.2。
+name: kaoyan_chain
+type: command
+version: "2.8.0"
+model: deepseek-chat
+provider: openai_compatible
+
+# argv 模板：调用 kaoyan_chain 的 CLI，把任务指令写入 prompt.txt 并以文件传参。
+command:
+  - "kaoyan"
+  - "run"
+  - "--prompt-file"
+  - "{prompt_file}"
+  - "--workspace"
+  - "{workspace}"
+  - "--answer-file"
+  - "{answer_file}"
+  - "--usage-file"
+  - "{usage_file}"
+  - "--json"
+
+# stdin：none 表示不向子进程 stdin 投喂内容（指令通过文件传递）
+stdin: none
+
+# 显式透传的环境变量名（其余一律被 env 白名单拦截）。
+# 注意：这里的名字是「变量名」，真实值由运行环境提供，不写入配置文件。
+env_passthrough:
+  - OPENAI_BASE_URL
+  - OPENAI_API_KEY
+  - KAOYAN_CHAIN_CONFIG
+
+# stdout 解析：kaoyan_chain --json 输出单个 JSON 对象
+parse:
+  format: json
+  answer_field: final_answer
+  toolcalls_field: tool_calls
+  sources_field: sources
+  citations_field: citations
+  usage_field: usage
+  search_trace_field: search_trace
+  fallbacks:
+    - jsonl
+    - text
+
+# Agent 输出的 tool_call 字段名到内部字段名的映射（兼容不同 CLI 命名）
+tool_call_mapping:
+  name: name
+  args: args
+  result: result
+  status: status
+  started_at: started_at
+  duration_ms: duration_ms
+
+params:
+  usage_file: true

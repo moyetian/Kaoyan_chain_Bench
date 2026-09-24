@@ -1,0 +1,144 @@
+# smoke.yml —— PR / push 冒烟门禁 + 回归门禁（任务 C-04，DoD ★12）
+# 内容：
+#   1. run --suite smoke --agent mock（6 题，全离线，秒级）
+#   2. 产出报告（json/markdown/html/csv）
+#   3. 回归门禁 kaoyanbench regression（与仓库内 baseline 比对）
+#
+# ★ 回归门禁失败时 job 必须失败（方案第 33 节 / 5.5）：
+#     Task Success 降 >5pp / Citation Accuracy 降 >5pp / Hallucination Rate 升 >3pp → exit 1 → job FAIL。
+#   本 workflow 直接依赖 `kaoyanbench regression` 的退出码（0 pass / 1 gate fail / 2 错误），
+#   不使用 `|| true` 吞掉失败。
+#
+# ★ R9：若 grader_mode=degraded，则**不得写入 baseline**（防止污染回归基线）。
+#   smoke 用 mock Runner（离线、grader 走确定性/降级均可），CI 无 GRADER_API_KEY 时
+#   hybrid 题会进入 degraded；此时本 workflow 跳过「更新 baseline」步骤，仅做冒烟，
+#   并明确打印原因。baseline 仅在 grader_mode=full 时更新。
+#
+# 无 secrets 依赖（PR 门禁不得引入 secrets）。
+name: smoke
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: smoke + regression gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install (editable)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Ensure fixtures exist (offline, deterministic)
+        # smoke 的 6 题均由 fixture 驱动；缺失时确定性生成（零网络）。
+        run: kaoyanbench fixtures build
+
+      - name: Check generated artifacts (snapshots, deterministic)
+        # P2：快照库由生成器 deterministic 产出；漂移即失败。
+        # 注意：私测题不在公开仓库中（见 benchmark/tasks/private/README.md），
+        # 故此处不跑 build_private_tasks.py --check；私测维护者在受控环境执行。
+        run: |
+          python tools/build_snapshots.py --check
+
+      - name: Validate (incl. snapshot gate)
+        # P2：快照已补齐，缺快照即 error。
+        run: kaoyanbench validate --suite core50 --require-snapshots
+
+      - name: Run smoke (mock, offline)
+        run: |
+          kaoyanbench run --suite smoke --agent mock --tag "ci-${{ github.run_id }}"
+
+      - name: Generate reports (json/markdown/html/csv)
+        run: |
+          kaoyanbench report --suite smoke --agent mock \
+            --tag "ci-${{ github.run_id }}" \
+            -f json,markdown,html,csv
+
+      - name: Detect grader_mode (R9 degraded 不写 baseline)
+        id: mode
+        env:
+          # 通过 env 传入（heredoc 用单引号，shell 不展开 ${...}；故在 env 层做替换）
+          SUITE_JSON: results/suites/smoke__mock__ci-${{ github.run_id }}.suite.json
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os, pathlib, sys
+          p = pathlib.Path(os.environ["SUITE_JSON"])
+          if not p.is_file():
+              print("grader_mode=missing")
+              print("write_baseline=false")
+              sys.exit(0)
+          data = json.loads(p.read_text(encoding="utf-8"))
+          mode = (data.get("aggregates") or {}).get("grader_mode") or "unknown"
+          print(f"grader_mode={mode}")
+          print(f"write_baseline={'true' if mode == 'full' else 'false'}")
+          PY
+
+      - name: Regression gate (FAIL 即 job 失败)
+        # 与仓库内 baseline（results/baseline/smoke__mock__baseline.suite.json）比对。
+        # baseline 不存在时做「自比对」（同一 tag）以确保 gate 逻辑可跑通，并打印提示。
+        run: |
+          set -euo pipefail
+          BASE_DIR="results/baseline"
+          BASE_FILE="$BASE_DIR/smoke__mock__baseline.suite.json"
+          CURRENT_TAG="ci-${{ github.run_id }}"
+          if [ -f "$BASE_FILE" ]; then
+            BASE_TAG="baseline"
+            # 把 baseline 拷回 results/suites/ 以便 store 能加载
+            mkdir -p results/suites
+            cp "$BASE_FILE" "results/suites/smoke__mock__baseline.suite.json"
+          else
+            echo "::notice:: 未找到 baseline（$BASE_FILE），本次 regression 使用同 tag 自比对以验证门禁可用（verdict 必为 pass/warn）"
+            BASE_TAG="$CURRENT_TAG"
+          fi
+          echo "baseline=$BASE_TAG current=$CURRENT_TAG"
+          kaoyanbench regression --baseline "$BASE_TAG" --current "$CURRENT_TAG" \
+            --suite smoke --agent mock
+          # 退出码由 set -e 保证：0 pass / 1 gate fail（→ job 失败）/ 2 错误
+
+      - name: Update baseline (仅 grader_mode=full 时)
+        # R9：degraded 结果不得写入 baseline。
+        if: steps.mode.outputs.write_baseline == 'true' && github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          TAG="ci-${{ github.run_id }}"
+          mkdir -p results/baseline
+          cp "results/suites/smoke__mock__${TAG}.suite.json" \
+             "results/baseline/smoke__mock__baseline.suite.json"
+          echo "baseline 已更新（grader_mode=full）。注意：本步骤只写工作区文件，"
+          echo "如需持久化请由维护者在发版流程中提交，CI 不执行 git commit。"
+
+      - name: Skip-baseline notice (degraded)
+        if: steps.mode.outputs.write_baseline != 'true'
+        run: |
+          echo "::warning:: grader_mode=${{ steps.mode.outputs.grader_mode }}（非 full）—— 按 R9 跳过 baseline 写入，防止污染回归基线。"
+
+      - name: Upload smoke reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-reports-${{ github.run_id }}
+          path: |
+            reports/
+            results/suites/
+          if-no-files-found: warn
+          retention-days: 14

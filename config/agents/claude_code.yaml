@@ -1,0 +1,32 @@
+# claude_code：Claude Code CLI 适配卡片（CommandRunner 模板）
+# 说明：以下命令与参数为「模板占位」，实际路径/参数请按本机 Claude Code 版本调整。
+# 零依赖约束下本项目不自带该 CLI；此卡片用于演示如何接入一个第三方 CLI Agent。
+name: claude_code
+type: command
+version: "1.0.0"
+model: claude-sonnet
+provider: anthropic
+
+command:
+  - "claude"
+  - "--print"
+  - "--output-format"
+  - "json"
+  - "--cwd"
+  - "{workspace}"
+
+stdin: prompt
+
+env_passthrough:
+  - ANTHROPIC_API_KEY
+  - ANTHROPIC_BASE_URL
+
+parse:
+  format: json
+  answer_field: result
+  usage_field: usage
+  fallbacks:
+    - text
+
+params:
+  usage_file: false

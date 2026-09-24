@@ -1,0 +1,24 @@
+# workbuddy：WorkBuddy Agent 适配卡片（HTTP Runner）
+# 说明：走 OpenAI 兼容的 HTTP 端点；base_url / api_key_env 均从环境变量取值，
+# 配置文件中**不写真实值**。无 key 时 HttpRunner 不崩，直接记 usage_source=none。
+name: workbuddy
+type: http
+version: "1.0.0"
+model: workbuddy-agent
+provider: openai_compatible
+
+base_url: ${WORKBUDDY_BASE_URL:-}
+api_key_env: WORKBUDDY_API_KEY
+
+parse:
+  format: json
+  answer_field: final_answer
+  toolcalls_field: tool_calls
+  sources_field: sources
+  citations_field: citations
+  usage_field: usage
+  fallbacks:
+    - text
+
+params:
+  timeout: 120

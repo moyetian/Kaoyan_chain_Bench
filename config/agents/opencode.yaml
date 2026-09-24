@@ -1,0 +1,32 @@
+# opencode：opencode CLI 适配卡片（CommandRunner 模板）
+# 说明：命令为模板占位，实际请按本机 opencode 的参数调整。
+name: opencode
+type: command
+version: "1.0.0"
+model: opencode-default
+provider: openai_compatible
+
+command:
+  - "opencode"
+  - "run"
+  - "--prompt-file"
+  - "{prompt_file}"
+  - "--json"
+
+stdin: none
+
+env_passthrough:
+  - OPENAI_API_KEY
+  - OPENAI_BASE_URL
+
+parse:
+  format: json
+  answer_field: answer
+  toolcalls_field: tool_calls
+  usage_field: usage
+  fallbacks:
+    - jsonl
+    - text
+
+params:
+  usage_file: false
