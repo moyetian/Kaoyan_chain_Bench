@@ -1,5 +1,7 @@
 # 05 · Roadmap（KaoyanBench 发展路线）
 
+> **English**: [05-roadmap.en.md](05-roadmap.en.md)
+
 > 任务：D-03　｜　范围：Phase 2 / Phase 3 / Phase 4
 > 本文承接方案 `docs/01-需求拆解与方案定稿.md` 第 6.1 节的取舍说明。
 

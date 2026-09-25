@@ -1,5 +1,7 @@
 # 03 · 接入新 Agent
 
+> **English**: [03-接入新Agent.en.md](03-接入新Agent.en.md)
+
 > 面向：需要把 Claude Code / Codex / OpenCode / WorkBuddy / kaoyan_chain 等 Agent 接进 KaoyanBench 的工程师。
 > 上游依据：`docs/01-需求拆解与方案定稿.md` 第 5.2 节（Runner 协议）、第 2.2 节（Runner 功能清单）。
 > 状态：与 v1.0 实现一致（`src/kaoyanbench/core/runner.py`、`core/runners/*`、`core/sandbox.py`）。

@@ -1,5 +1,7 @@
 # KaoyanBench
 
+> **English**: [README.en.md](README.en.md)
+
 > **KaoyanBench is an open benchmark for evaluating AI agents on graduate-entrance-examination research, information retrieval, document analysis, evidence verification, planning, and long-horizon workflows.**
 >
 > **KaoyanBench 是面向考研场景的 AI Agent 综合评测基准，用于测试信息检索、院校研究、招生政策分析、资料处理、证据验证、学习规划以及长流程自动化能力。**
