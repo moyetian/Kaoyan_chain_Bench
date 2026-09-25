@@ -1,8 +1,9 @@
 # 运行产物（派生数据，可重建；但目录本身必须存在——pytest 的
-# --basetemp=results/.pytest_tmp 要求父目录可创建，全新 clone 无此目录会全挂。
+# --basetemp=.pytest_tmp 要求父目录可创建，全新 clone 无此目录会全挂。
 # 故用 results/* + 否定保留 .gitkeep 的方式忽略内容但保留目录。）
 results/*
 !results/.gitkeep
+.pytest_tmp/
 reports/
 *.db
 *.db-journal

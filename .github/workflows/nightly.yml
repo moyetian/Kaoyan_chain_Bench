@@ -5,7 +5,9 @@
 #   单题 research 上限 900s，串行 50 题理论上限 12.5h；nightly 用 --concurrency 缩短墙钟时间
 #   （默认 4，方案 1.4 上限亦为 4）。
 #
-# ★ 联网题：v1.0 的 23 道 online 题依赖真实网页，19 题快照尚未建立（T-07 遗留）。
+# ★ 联网题：23 道 online 题配齐**合成镜像**快照（v1.1 虚构回放语料，
+#   见 tools/build_snapshots.py 头注），`--offline-replay` 链路可用；
+#   真实网页快照仍待 `snapshot fetch` 抓取并版本化。
 #   nightly 默认**不联网**：不传 GRADER_BASE_URL / GRADER_API_KEY 时语义评测自动降级，
 #   且联网题会因无快照标记 needs_snapshot（不阻塞离线子集）。若仓库 secrets 配了模型
 #   key，语义评测会真实调用；否则优雅降级为 degraded（不使 job 失败）。

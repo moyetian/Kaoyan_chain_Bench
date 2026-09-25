@@ -156,16 +156,18 @@ fi
 # ---------------------------------------------------------------------------
 hr; echo "[8/8] 回归门禁 regression"
 hr
-# 以本次 release 结果为 current；baseline 优先用仓库 baseline，否则自比对验证门禁可用
-BASE_FILE="results/baseline/smoke__mock__baseline.suite.json"
+# 以本次 release 结果为 current；baseline 必须使用入库基线
+# （benchmark/baselines/）。缺失即 FAIL，严禁自比对（P0 教训：自比对恒绿）。
+BASE_FILE="benchmark/baselines/smoke__mock__baseline.suite.json"
 if [ -f "$BASE_FILE" ]; then
   cp "$BASE_FILE" "results/suites/smoke__mock__baseline.suite.json"
   BASE_TAG="baseline"
-  echo "  使用仓库 baseline：$BASE_FILE"
+  echo "  使用入库基线：$BASE_FILE"
 else
-  BASE_TAG="$TAG"
-  echo "  未找到仓库 baseline，使用同 tag 自比对以验证门禁可用性"
+  fail "回归基线缺失（$BASE_FILE），拒绝自比对（见 benchmark/baselines/README.md）"
+  BASE_TAG=""
 fi
+if [ -n "$BASE_TAG" ]; then
 REG_OUT="$($KYB regression --baseline "$BASE_TAG" --current "$TAG" --suite smoke --agent mock 2>&1)"
 REG_CODE=$?
 echo "$REG_OUT" | tail -1 || true
@@ -175,6 +177,7 @@ elif [ "$REG_CODE" -eq 1 ]; then
   fail "regression 门禁失败（退出码 1，存在指标回退）"
 else
   fail "regression 执行错误（退出码=$REG_CODE）"
+fi
 fi
 
 # ---------------------------------------------------------------------------

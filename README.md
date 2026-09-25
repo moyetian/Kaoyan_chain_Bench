@@ -6,15 +6,17 @@
 
 配套项目：[`kaoyan_chain`](https://github.com/moyetian/kaoyan_chain)（考研学习链）。KaoyanBench 是**独立项目**，不依赖其源码，仅通过插件式 Runner 适配层接入。
 
-> 当前版本 **v1.1.0**（见 [CHANGELOG](CHANGELOG.md)）：23 个联网任务快照补齐
-> （`validate --require-snapshots` 门禁）、Agent 与任务目录隔离防作弊、
+> 当前版本 **v1.1.0**（见 [CHANGELOG](CHANGELOG.md)）：23 个联网任务配齐**合成镜像快照**
+> （虚构回放语料，用于 `--offline-replay` 链路验证；真实网页快照待 `snapshot fetch`
+> 抓取并版本化，`validate --require-snapshots` 门禁）、Agent 与任务目录隔离防作弊、
 > 预算口径与复评一致性修复。Private 隐藏题**不在公开仓库中**
 > （仅机制与生成器公开，见 `benchmark/tasks/private/README.md`）。
 
 ## 设计原则
 
 1. **可重复**：固定任务、固定 fixture、固定 seed、网页快照版本化。
-2. **可自动评分**：v1.0 的 50 个任务 100% 可自动评分，其中 24 个（48%）为纯确定性评分。
+2. **可自动评分**：v1.0 的 50 个任务 100% 可自动评分（DoD #4 口径为**自动评分覆盖率**，
+   含 semantic；其中 24 个（48%）为纯确定性评分，不依赖评测模型）。
 3. **可持续回归**：`compare` + `regression` 门禁，失败即 CI FAIL。
 4. **零第三方依赖**：核心链路（任务加载 / Runner / Logger / Grader / Reporter / CLI / 回归）纯标准库实现，Python ≥3.10 可跑。
 5. **不编造数据**：涉及真实院校当年具体数字的任务，ground truth 一律为空，只做要点命中 + 来源等级 + 年份标识判定；所有 fixture 内院校均为虚构。

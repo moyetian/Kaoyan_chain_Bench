@@ -2,6 +2,32 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 风格，版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Fixed（审查整改，对应 `KaoyanBench-v1.1.0-审查报告.md`）
+
+- **P0 回归门禁空转**：`smoke` 的 mock 基线入库于 `benchmark/baselines/`
+  （版本化，CI 只读不写）；基线缺失时 `smoke.yml` 直接 `::error::` + 退出码 2，
+  绝不静默自比对。`tools/release_check.sh` 同步改为缺基线即 FAIL。
+  移除了写 `results/baseline/`（gitignore 下、CI 不提交）的无效「Update baseline」步骤，
+  以及 `smoke.yml` 中与 `validate.yml` 重复的 `validate --suite core50` 步骤（P2-3）。
+- **P1-2 CI 加 anti-echo 探针**：`validate.yml` 新增 echo 探针
+  （`run --suite core50 --agent echo`，通过率红线 ≤8%，依据 `docs/02` §6.2），
+  超限即 job FAIL。
+- **P2-4 workflow 双触发**：`smoke.yml` / `validate.yml` 的 `push` 触发限定到 `main`，
+  同仓库 PR 不再跑两遍。
+
+### Changed（口径澄清）
+
+- **P1-1 DoD #4**：README 明确为「自动评分覆盖率（含 semantic，100%）；
+  其中 24 个（48%）为纯确定性，不依赖评测模型」。
+- **P1-3 快照口径**：README / CHANGELOG / roadmap 明确 v1.1 的 23 题快照为
+  **合成镜像**（虚构回放语料，用于 `--offline-replay` 链路验证）；
+  真实网页快照仍需 `snapshot fetch` 抓取并版本化。
+- **P2-1**：`docs/05-roadmap.md` 与 `nightly.yml` 的残留旧数字「19 道」已按实测改为 23。
+- **P2-2**：pytest basetemp 由 `results/.pytest_tmp` 挪到仓库根 `.pytest_tmp/`
+  （`.gitignore` 已忽略），不再与「运行留痕」目录混杂。
+
 ## [1.1.0] - 2026-09-24
 
 首个公开发布版（仓库：`moyetian/Kaoyan_chain_Bench`）。在 v1.0 基础上完成两轮硬化，
@@ -9,7 +35,9 @@
 
 ### Added（新增）
 
-- **快照库补齐**：23 个联网任务全部配齐离线回放快照（35 页），`tools/build_snapshots.py`
+- **快照库补齐（合成镜像）**：23 个联网任务全部配齐离线回放用的**合成镜像快照**
+  （35 页虚构回放语料，用于 `--offline-replay` 链路验证，不代表真实网页；
+  真实网页快照仍需 `snapshot fetch` 抓取并版本化），`tools/build_snapshots.py`
   确定性生成（`--check` 可校验）；`validate --require-snapshots` 缺快照即 error；
   nightly 与 smoke CI 已启用该门禁。
 - **Private 隐藏集机制**：`tools/build_private_tasks.py`（10 题生成器公开）、`--split private`

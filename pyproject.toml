@@ -53,6 +53,7 @@ start = "tests"
 
 [tool.pytest.ini_options]
 # 默认 basetemp 落在系统临时目录；受限环境（如部分 Windows 上 %TEMP% 被策略拒绝访问）
-# 会在收集阶段直接 PermissionError。固定到仓库内（已被 .gitignore 忽略）以规避。
+# 会在收集阶段直接 PermissionError。固定到仓库根的 .pytest_tmp/（已被 .gitignore 忽略）
+# 以规避；不放在 results/ 下，避免与「运行留痕」目录语义混杂及并发编号竞态。
 # 需要时可用显式 `--basetemp=...` 覆盖（命令行参数在 addopts 之后解析，优先生效）。
-addopts = "--basetemp=results/.pytest_tmp"
+addopts = "--basetemp=.pytest_tmp"

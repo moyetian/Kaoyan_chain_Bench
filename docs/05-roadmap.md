@@ -21,7 +21,12 @@
 - 主测试集 `core50`：**50 题 / 8 类 / Public**。
 - 类别：search 12、university 9、policy 5、exam 5、pdf 5、planning 5、research 4、hallucination 5。
 - 难度：Easy 10 / Medium 18 / Hard 15 / Expert 7。
-- 自动评分：100%（纯确定性 24/50 = 48%）。
+- 自动评分：100% 可自动评分（DoD #4 口径为自动评分覆盖率，含 semantic；
+  其中纯确定性 24/50 = 48%，不依赖评测模型）。
+- 回归基线：`smoke` 的 mock 基线入库于 `benchmark/baselines/`（版本化，CI 只读；
+  基线缺失即门禁失败，严禁自比对）。
+- 快照口径：v1.1 的 23 题快照为**合成镜像**（虚构回放语料，用于 `--offline-replay`
+  链路验证）；真实网页快照待 `snapshot fetch` 抓取并版本化（见 Phase 4 数据时效）。
 - CI：PR 门禁只跑 `smoke`（6 题全离线）+ 回归比对；完整 `core50` 作 nightly / 发版门禁。
 
 ### 1.1 与《原方案》第 36 节 MVP 配比的差异（必须留档）
@@ -77,7 +82,8 @@
 ### 2.3 工程配套
 
 - [ ] `benchmark/tasks/{public,private}` 各 100 题；`task.json` 的 `version` 字段规范（gt 变更必须升版）。
-- [ ] **快照库补全**：v1.0 遗留的 19 道联网题快照建立（T-07），并纳入 `snapshot verify` 回归。
+- [ ] **快照库补全**：v1.0 遗留的 23 道联网题配齐**合成镜像**快照（T-07 链路回放部分），
+  并纳入 `snapshot verify` 回归；真实网页快照抓取与版本化见 Phase 4 数据时效。
 - [ ] **抗过拟合回归**：CI 增加 anti-echo / 抄题面 作弊探针的通过率上界断言（v1.0 已有探针思路，见 QA 报告 R4）。
 - [ ] **成本口径统一**（方案 R4）：跨 Agent 的成本对比升为 Gate 可选项。
 - [ ] Private 集发布流程与防污染规范文档化。
@@ -124,7 +130,7 @@
 
 | 里程碑 | 内容 | 依赖 |
 |---|---|---|
-| v1.1 | 补 23 题快照、CI 加 anti-echo 断言 | v1.0 |
+| v1.1 | 补 23 题合成镜像快照、CI 加 anti-echo 断言（`validate.yml` 的 echo 探针：core50 通过率 ≤8%） | v1.0 |
 | v2.0 | Phase 2：100 Public + 100 Private + 完整 baseline | v1.1 |
 | v2.x | Phase 3：SWE-bench / Terminal-Bench / Browser 接入 | v2.0 + 容器隔离 |
 | v3.0 | Phase 4：公开 Leaderboard | v2.x |

@@ -9,7 +9,7 @@ name: validate
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
     branches: ["**"]
 
@@ -55,3 +55,25 @@ jobs:
       - name: Validate core50 (schema + fixture hash + snapshot gate, offline)
         # P2：快照已补齐，缺快照即 error（--require-snapshots）。
         run: kaoyanbench validate --suite core50 --require-snapshots
+
+      - name: Anti-echo probe (基准可判别性，echo 通过率 ≤8%)
+        # P1-2：只会「回显题面」的 echo Agent 不得刷分（防判定词泄漏回潮）。
+        # echo 跑 core50 50 题纯本地、秒级，成本可忽略。阈值依据 docs/02 §6.2。
+        run: |
+          kaoyanbench run --suite core50 --agent echo --tag echo-probe
+          python - <<'PY'
+          import json, pathlib, sys
+          p = pathlib.Path("results/suites/core50__echo__echo-probe.suite.json")
+          if not p.is_file():
+              print(f"::error:: anti-echo 探针结果缺失：{p}")
+              sys.exit(2)
+          agg = json.loads(p.read_text(encoding="utf-8")).get("aggregates") or {}
+          rate = agg.get("task_success_rate")
+          if rate is None:
+              print("::error:: anti-echo 探针无法读取 task_success_rate")
+              sys.exit(2)
+          print(f"echo 通过率 = {rate:.1%}（红线 ≤8%，即最多 4/50）")
+          if rate > 0.08:
+              print(f"::error:: echo 通过率 {rate:.1%} 超过 8% 上界，疑似判定词泄漏进题面（见 docs/02 §6.2）")
+              sys.exit(1)
+          PY
